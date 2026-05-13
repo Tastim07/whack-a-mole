@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>打地鼠</title>
+
+<style>
+html, body {
+  margin: 0;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: Arial, "Noto Sans TC", sans-serif;
+  background: linear-gradient(#8fd36b, #4caf50);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game {
+  width: min(94vw, 680px);
+  background: #fff7df;
+  border: 6px solid #5b3a1e;
+  border-radius: 28px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 12px 0 #3b2412;
+}
+
+h1 {
+  margin: 0 0 16px;
+  color: #5b3a1e;
+  font-size: 42px;
+}
+
+.info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 26px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.controls {
+  margin-bottom: 20px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+input {
+  width: 100px;
+  padding: 8px;
+  font-size: 22px;
+  text-align: center;
+  border: 3px solid #5b3a1e;
+  border-radius: 10px;
+}
+
+button {
+  padding: 13px 26px;
+  margin: 8px 5px;
+  border: none;
+  border-radius: 999px;
+  background: #ff7a00;
+  color: white;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.hole {
+  aspect-ratio: 1;
+  background: #5b3a1e;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 10px 0 rgba(0,0,0,0.25);
+  cursor: pointer;
+}
+
+.hole.wrong {
+  animation: wrongFlash 0.25s;
+}
+
+@keyframes wrongFlash {
+  0% { background: #5b3a1e; }
+  50% { background: #ff2b2b; transform: scale(0.95); }
+  100% { background: #5b3a1e; }
+}
+
+.mole {
+  position: absolute;
+  left: 50%;
+  bottom: -80%;
+  transform: translateX(-50%);
+  width: 72%;
+  height: 72%;
+  background: #9b5a2e;
+  border-radius: 50% 50% 40% 40%;
+  transition: bottom 0.12s;
+}
+
+.eye {
+  position: absolute;
+  top: 28%;
+  width: 12px;
+  height: 12px;
+  background: black;
+  border-radius: 50%;
+}
+
+.eye.left { left: 28%; }
+.eye.right { right: 28%; }
+
+.nose {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 15px;
+  background: #ffb6b6;
+  border-radius: 50%;
+}
+
+.stars {
+  position: absolute;
+  left: 50%;
+  top: -28px;
+  transform: translateX(-50%);
+  font-size: 24px;
+  display: none;
+  animation: starsSpin 0.45s linear infinite;
+}
+
+@keyframes starsSpin {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  100% { transform: translateX(-50%) rotate(360deg); }
+}
+
+.hole.show .mole {
+  bottom: 8%;
+}
+
+.hole.hit .mole {
+  bottom: 8%;
+  animation: dizzyShake 0.4s;
+}
+
+.hole.hit .stars {
+  display: block;
+}
+
+.hole.hit .eye {
+  width: 18px;
+  height: 18px;
+  background: transparent;
+}
+
+.hole.hit .eye::before {
+  content: "×";
+  position: absolute;
+  left: 0;
+  top: -5px;
+  font-size: 24px;
+  font-weight: bold;
+  color: black;
+}
+
+@keyframes dizzyShake {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-52%) rotate(-8deg); }
+  50% { transform: translateX(-48%) rotate(8deg); }
+  75% { transform: translateX(-52%) rotate(-8deg); }
+  100% { transform: translateX(-50%) rotate(0deg); }
+}
+
+.message {
+  margin-top: 18px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #5b3a1e;
+  min-height: 30px;
+}
+
+.message.wrongText {
+  color: #d60000;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modalBox {
+  width: min(86vw, 420px);
+  background: #fff7df;
+  border: 6px solid #5b3a1e;
+  border-radius: 26px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 12px 0 #3b2412;
+}
+
+.modalBox h2 {
+  margin: 0 0 12px;
+  font-size: 38px;
+  color: #5b3a1e;
+}
+
+.modalBox p {
+  font-size: 28px;
+  font-weight: bold;
+  color: #5b3a1e;
+}
+
+@media (max-width: 520px) {
+  .game {
+    width: 92vw;
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .info {
+    font-size: 20px;
+  }
+
+  .controls {
+    font-size: 16px;
+  }
+
+  button {
+    font-size: 18px;
+    padding: 10px 18px;
+  }
+
+  input {
+    font-size: 18px;
+    width: 80px;
+  }
+
+  .board {
+    gap: 12px;
+  }
+
+  .message {
+    font-size: 18px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+  <h1>打地鼠</h1>
+
+  <div class="info">
+    <div>分數：<span id="score">0</span></div>
+    <div>時間：<span id="time">60</span>s</div>
+  </div>
+
+  <div class="controls">
+    地鼠出現時間：
+    <input id="speedInput" type="number" value="0.8" min="0.1" max="10" step="0.1">
+    秒
+    <br>
+    <button onclick="startGame()">開始</button>
+    <button onclick="stopGame()">停止</button>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="message" id="message">調較時間後按開始！</div>
+</div>
+
+<div class="modal" id="resultModal">
+  <div class="modalBox">
+    <h2>時間到！</h2>
+    <p id="resultText">你打中 0 隻地鼠！</p>
+    <button onclick="closeResult()">再玩一次</button>
+  </div>
+</div>
+
+<script>
+const board = document.getElementById("board");
+const scoreText = document.getElementById("score");
+const timeText = document.getElementById("time");
+const speedInput = document.getElementById("speedInput");
+const message = document.getElementById("message");
+const resultModal = document.getElementById("resultModal");
+const resultText = document.getElementById("resultText");
+
+let score = 0;
+let timeLeft = 60;
+let moleTimer = null;
+let countdownTimer = null;
+let currentHole = null;
+let playing = false;
+let isHitAnimating = false;
+
+for (let i = 0; i < 9; i++) {
+  const hole = document.createElement("div");
+  hole.className = "hole";
+
+  const mole = document.createElement("div");
+  mole.className = "mole";
+
+  const stars = document.createElement("div");
+  stars.className = "stars";
+  stars.textContent = "⭐";
+
+  const leftEye = document.createElement("div");
+  leftEye.className = "eye left";
+
+  const rightEye = document.createElement("div");
+  rightEye.className = "eye right";
+
+  const nose = document.createElement("div");
+  nose.className = "nose";
+
+  mole.appendChild(stars);
+  mole.appendChild(leftEye);
+  mole.appendChild(rightEye);
+  mole.appendChild(nose);
+  hole.appendChild(mole);
+  board.appendChild(hole);
+
+  hole.addEventListener("pointerdown", () => {
+    if (!playing || isHitAnimating) return;
+
+    if (hole.classList.contains("show")) {
+      hitMole(hole);
+    } else {
+      wrongHit(hole);
+    }
+  });
+}
+
+const holes = document.querySelectorAll(".hole");
+
+function hitMole(hole) {
+  score++;
+  scoreText.textContent = score;
+
+  playHitSound();
+
+  clearTimeout(moleTimer);
+  isHitAnimating = true;
+
+  hole.classList.remove("show");
+  hole.classList.add("hit");
+
+  message.classList.remove("wrongText");
+  message.textContent = "打中！";
+
+  setTimeout(() => {
+    hole.classList.remove("hit");
+    currentHole = null;
+    isHitAnimating = false;
+
+    if (playing) {
+      showMole();
+    }
+  }, 420);
+}
+
+function wrongHit(hole) {
+  playWrongSound();
+
+  hole.classList.add("wrong");
+  message.classList.add("wrongText");
+  message.textContent = "打錯！";
+
+  setTimeout(() => {
+    hole.classList.remove("wrong");
+  }, 250);
+}
+
+function playHitSound() {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const oscillator = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  oscillator.type = "square";
+  oscillator.frequency.setValueAtTime(520, audioCtx.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(180, audioCtx.currentTime + 0.12);
+
+  gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+
+  oscillator.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  oscillator.start();
+  oscillator.stop(audioCtx.currentTime + 0.12);
+}
+
+function playWrongSound() {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const oscillator = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  oscillator.type = "sawtooth";
+  oscillator.frequency.setValueAtTime(160, audioCtx.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.15);
+
+  gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+  oscillator.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  oscillator.start();
+  oscillator.stop(audioCtx.currentTime + 0.15);
+}
+
+function showMole() {
+  holes.forEach(hole => {
+    hole.classList.remove("show");
+    hole.classList.remove("hit");
+  });
+
+  const randomIndex = Math.floor(Math.random() * holes.length);
+  currentHole = holes[randomIndex];
+  currentHole.classList.add("show");
+
+  let speedInSeconds = Number(speedInput.value);
+
+  if (isNaN(speedInSeconds) || speedInSeconds < 0.1) {
+    speedInSeconds = 0.8;
+    speedInput.value = 0.8;
+  }
+
+  const speed = speedInSeconds * 1000;
+
+  moleTimer = setTimeout(() => {
+    if (currentHole) {
+      currentHole.classList.remove("show");
+      currentHole = null;
+    }
+
+    if (playing) {
+      showMole();
+    }
+  }, speed);
+}
+
+function startGame() {
+  stopGame();
+
+  score = 0;
+  timeLeft = 60;
+  playing = true;
+  isHitAnimating = false;
+
+  scoreText.textContent = score;
+  timeText.textContent = timeLeft;
+  message.classList.remove("wrongText");
+  message.textContent = "開始！";
+  resultModal.classList.remove("show");
+
+  showMole();
+
+  countdownTimer = setInterval(() => {
+    timeLeft--;
+    timeText.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      endGame();
+    }
+  }, 1000);
+}
+
+function stopGame() {
+  playing = false;
+  isHitAnimating = false;
+  clearTimeout(moleTimer);
+  clearInterval(countdownTimer);
+  holes.forEach(hole => {
+    hole.classList.remove("show");
+    hole.classList.remove("hit");
+    hole.classList.remove("wrong");
+  });
+}
+
+function endGame() {
+  stopGame();
+  resultText.textContent = "你打中 " + score + " 隻地鼠！";
+  resultModal.classList.add("show");
+}
+
+function closeResult() {
+  resultModal.classList.remove("show");
+  startGame();
+}
+</script>
+
+</body>
+</html>
